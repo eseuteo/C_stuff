@@ -1,73 +1,115 @@
+// medir tiempo
 #include "fasta_reader.h"
 #include <math.h>
 
-#define K_MER_SIZE 15
-
 int main(int argc, char ** argv){
-  if (argc < 2)
+  if (argc < 3)
     terror(10);
 
-  fastafile * fasta_f;
-  frequencies_vector frequencies_v[16];
-
-  fasta_f = malloc(sizeof(fastafile));
-  fasta_f->ffd = fopen(argv[1], "r");
-  if (fasta_f->ffd == NULL){
-    terror(15);
+  int k_size = atoi(argv[1]);
+  if (k_size < 2 || k_size > 15){
+    terror(11);
   }
 
-  int num_of_sequence = 0;
+  fastafile * fasta_f;
+  frequencies_vector frequencies_v[2];
+  int num_of_sequence;
   int index;
-  char k_mer[K_MER_SIZE];
+  char * k_mer;
+  int nucleotid;
   char * aux_pchar;
   char * name;
-  int aux = 0;
+  int aux;
+  int empezar;
+  int i;
 
-  while (aux_pchar = fgets(fasta_f->buffer, MAX_SIZE, fasta_f->ffd)){
-  //  printf("%s\n", aux_pchar);
-    if (feof(fasta_f->ffd)){
-      printf("EOF reached\n");
-      break;
+  k_mer = malloc(sizeof(char) * k_size);
+  aux_pchar = malloc(sizeof(char) * k_size);
+  fasta_f = malloc(sizeof(fastafile));
+
+  for (i = 2; i <= 3 ; i++){
+    fasta_f->ffd = fopen(argv[i], "r");
+    if (fasta_f->ffd == NULL){
+    terror(15);
     }
-    if (*aux_pchar == '>'){
-      frequencies_v[num_of_sequence].vector = calloc((int) pow(4, K_MER_SIZE), sizeof(int));
-      // for (int i=0; i<(int) pow(4, K_MER_SIZE); i++){
-      //   printf("%d\n",frequencies_v[0].vector[i]);
-      // }
-    //  strcpy(frequencies_v[num_of_sequence].name, aux_pchar+1);
-    //  name = malloc(sizeof(char) * strlen(aux_pchar));
-    //  strcpy(name, aux_pchar);
-    //  frequencies_v[num_of_sequence].name = name;
-      strcpy(frequencies_v[num_of_sequence].name, aux_pchar);
-    //  printf("%s\n", frequencies_v[num_of_sequence].name);
-      num_of_sequence++;
-    } else {
-      for (aux_pchar = fasta_f->buffer; *(aux_pchar+K_MER_SIZE) != '\0'; aux_pchar++){
-        aux++;
-      //  printf("%s\n", aux_pchar);
-        strncpy(k_mer, aux_pchar, K_MER_SIZE);
-        index = get_index(k_mer, K_MER_SIZE);
-        frequencies_v[num_of_sequence-1].vector[index]++;
+
+    num_of_sequence = i-2;
+    empezar = 1;
+
+    frequencies_v[num_of_sequence].vector = calloc((int) pow(4, k_size), sizeof(int));
+    strcpy(frequencies_v[num_of_sequence].name, "initialization");
+
+    do {
+      nucleotid = fgetc(fasta_f->ffd);
+      if (nucleotid == '\n')
+        continue;
+      if (nucleotid == '>'){
+        int j = 0;
+        while (nucleotid != '\n'){
+          frequencies_v[num_of_sequence].name[j] = nucleotid;
+          nucleotid = fgetc(fasta_f->ffd);
+          j++;
+        }
+        frequencies_v[num_of_sequence].name[j] = '\0';
+      } else {
+        if (is_valid(nucleotid)){
+          if (empezar){
+            k_mer[0] = nucleotid;
+            for (int j = 1; j <= k_size-1; j++){
+              do {
+                nucleotid = fgetc(fasta_f->ffd);
+              } while (nucleotid == '\n');
+              if (!is_valid(nucleotid)){
+                printf("El k-mer es demasiado grande ?\n");
+              }
+              k_mer[j] = nucleotid;
+            }
+            empezar = 0;
+          } else {
+            strncpy(aux_pchar, k_mer+1, k_size-1);
+            strncpy(k_mer, aux_pchar, k_size-1);
+            k_mer[k_size-1] = nucleotid;
+          }
+          index = get_index(k_mer, k_size);
+          frequencies_v[num_of_sequence].vector[index]++;
+        //  printf("%s\t%d\t%d\n", k_mer, index, frequencies_v[num_of_sequence].vector[index]);
+        } else {
+          empezar = 1;
+        }
       }
-    }
+    } while (nucleotid != EOF);
+    num_of_sequence++;
   }
 
-  double euclidean_d = euclidean_distance(frequencies_v[1].vector, frequencies_v[2].vector, (int) pow(4, K_MER_SIZE));
-  printf("%f\n", euclidean_d);
-  // for (int i = 0; i<num_of_sequence; i++){
-  //   for (int j=0; j<(int) pow(4, K_MER_SIZE); j++){
-  //     printf("%d, ", frequencies_v[i].vector[j]);
-  //   }
-  //   printf("\n");
-  // }
+  double euclidean_d = 0;
+  euclidean_d = euclidean_distance(frequencies_v[0].vector, frequencies_v[1].vector, (int) pow(4, k_size));
+  printf("%f\n\n", euclidean_d);
+
+  for (int i = 0; i<num_of_sequence; i++){
+    printf("%s\n", frequencies_v[i].name);
+    for (int j=0; j<(int) pow(4, k_size); j++){
+      printf("%d\n", frequencies_v[i].vector[j]);
+    }
+    printf("\n");
+  }
+
+  free(fasta_f);
+  free(k_mer);
+  free(aux_pchar);
+  free(frequencies_v[0].vector);
+  free(frequencies_v[1].vector);
 }
 
 double euclidean_distance(int * vector1, int * vector2, int k){
-  double res;
+  double res = 0;
   for (int i=0; i<k; i++){
     res += pow((vector1[i]-vector2[i]), 2);
   }
   return sqrt(res);
+}
+
+bool is_valid(char c){
+	return c == 'A'|| c == 'C' || c == 'G' || c == 'T';
 }
 
 int get_index(char * k_mer, int k){
@@ -94,70 +136,7 @@ int get_index(char * k_mer, int k){
     return res;
 }
 
-//   fastafile * fasta_f;
-//   nuc_sequences sequences[MAX_SIZE];
-//
-//   fasta_f = malloc(sizeof(fastafile));
-//   fasta_f->ffd = fopen(argv[1], "r");
-//
-//   if (fasta_f->ffd == NULL){
-//     terror(15);
-//   }
-//
-//   read_fasta(sequences, fasta_f);
-// }
-//
-// void read_fasta(nuc_sequences * sequences, fastafile * fasta_f){
-//   char * sequence;
-//   char * name;
-//   char * aux_pchar;
-//   int different_sequences;
-//   int used;
-//   int alloc_multiplier = 1;
-//
-//   different_sequences = 0;
-//
-//   while (aux_pchar = fgets(fasta_f->buffer, MAX_SIZE, fasta_f->ffd)){
-//     if (feof(fasta_f->ffd)){
-//       printf("EOF reached\n");
-//       break;
-//     }
-//     if (*aux_pchar == '>'){     // es el nombre
-//     //  name = malloc(sizeof(char) * strlen(aux_pchar));
-// 		//	strcpy(name, aux_pchar+1);
-//       strcpy(sequences[different_sequences].name, aux_pchar+1);
-//       printf("%s\n", sequences[different_sequences-1].name);
-//       //printf("%s\n", sequences[different_sequences-1].name);
-//       // alloc_multiplier = 1;
-// 		  // used = 0;
-//       // if (different_sequences){
-//       //   sequences[different_sequences-1].sequence = sequence;
-//       //   if (realloc(sequence, sizeof(char) * MAX_SIZE * alloc_multiplier) == NULL)
-//       //      terror(3);
-//       // }
-//       // different_sequences++;
-//     } else {
-//       // for (aux_pchar = fasta_f->buffer; *aux_pchar != '\0'; aux_pchar++){
-//       //   if (is_valid(*aux_pchar)){
-//       //     sequence[used++] = *aux_pchar;
-//       //     if (used == alloc_multiplier * MAX_SIZE){
-//       //       if (realloc(sequence, MAX_SIZE * ++alloc_multiplier * sizeof(char)) == NULL)
-//       // 			   terror(3);
-//       //     }
-//       //   }
-//       // }
-//       continue;
-//     }
-//     sequence[used] = '\0';
-//     printf("%s\n", sequence);
-//   }
-// }
-//
 int terror(int i){
 	fprintf(stderr, "Error: %d\n",i);
 	return(i);
 }
-//
-// bool is_valid(char c){
-// 	return c == 'A'|| c == 'C' || c == 'G' || c == 'T';
-// }
