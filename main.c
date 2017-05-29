@@ -123,7 +123,7 @@ bool is_valid(char c){
 int get_index(char * k_mer, int k){
   int res = 0;
   int i;
-  int nucleotid;
+  int nucleotid = 0;
   for (i = 0; i < k; i++){
     switch (k_mer[i]) {
       case 'A':
