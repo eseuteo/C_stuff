@@ -45,7 +45,7 @@ int main(int argc, char ** argv){
     num_of_sequence = i-2;
     empezar = 1;
 
-    frequencies_v[num_of_sequence].vector = calloc((int) pow(4, k_size), sizeof(int));
+    frequencies_v[num_of_sequence].vector = calloc(four_powers[1][k_size], sizeof(int));
     strcpy(frequencies_v[num_of_sequence].name, "initialization");
 
     do {
@@ -81,7 +81,6 @@ int main(int argc, char ** argv){
           }
           index = get_index(k_mer, k_size);
           frequencies_v[num_of_sequence].vector[index]++;
-        //  printf("%s\t%d\t%d\n", k_mer, index, frequencies_v[num_of_sequence].vector[index]);
         } else {
           empezar = 1;
         }
@@ -140,9 +139,7 @@ int get_index(char * k_mer, int k){
         break;
       }
       res += four_powers[nucleotid][k-1-i];
-  //  res += pow(4,(k-1-i)) * nucleotid;
   }
-  //  printf("%s\t%d\n", k_mer, res);
     return res;
 }
 
