@@ -1,6 +1,15 @@
+// g_prof
 // medir tiempo
+// linked list
 #include "fasta_reader.h"
 #include <math.h>
+
+int four_powers[3][16] =
+{
+  {1, 4, 16, 64, 256, 1024, 4096, 16384, 65536, 262144, 1048576, 4194304, 16777216, 67108864, 268435456, 1073741824},
+  {2, 8, 32, 128, 512, 2048, 8192, 32768, 131072, 524288, 2097152, 8388608, 33554432, 134217728, 536870912, 2147483648},
+  {3, 12, 48, 192, 768, 3072, 12288, 49152, 196608, 786432, 3145728, 12582912, 50331648, 201326592, 805306368, 3221225472}
+};
 
 int main(int argc, char ** argv){
   if (argc < 3)
@@ -119,20 +128,21 @@ int get_index(char * k_mer, int k){
   for (i = 0; i < k; i++){
     switch (k_mer[i]) {
       case 'A':
+        continue;
+      case 'C':
         nucleotid = 0;
         break;
-      case 'C':
+      case 'G':
         nucleotid = 1;
         break;
-      case 'G':
+      case 'T':
         nucleotid = 2;
         break;
-      case 'T':
-        nucleotid = 3;
-        break;
       }
-    res += pow(4,(k-1-i)) * nucleotid;
+      res += four_powers[nucleotid][k-1-i];
+  //  res += pow(4,(k-1-i)) * nucleotid;
   }
+  //  printf("%s\t%d\n", k_mer, res);
     return res;
 }
 
