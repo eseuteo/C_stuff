@@ -31,6 +31,7 @@ int main(int argc, char ** argv){
   int aux;
   int empezar;
   int i;
+  int j;
 
   k_mer = malloc(sizeof(char) * k_size);
   aux_pchar = malloc(sizeof(char) * k_size);
@@ -44,8 +45,7 @@ int main(int argc, char ** argv){
 
     num_of_sequence = i-2;
     empezar = 1;
-
-    frequencies_v[num_of_sequence].vector = calloc(four_powers[1][k_size], sizeof(int));
+    frequencies_v[num_of_sequence].vector = calloc(four_powers[0][k_size], sizeof(int));
     strcpy(frequencies_v[num_of_sequence].name, "initialization");
 
     do {
@@ -53,7 +53,7 @@ int main(int argc, char ** argv){
       if (nucleotid == '\n')
         continue;
       if (nucleotid == '>'){
-        int j = 0;
+        j = 0;
         while (nucleotid != '\n'){
           frequencies_v[num_of_sequence].name[j] = nucleotid;
           nucleotid = fgetc(fasta_f->ffd);
@@ -61,24 +61,23 @@ int main(int argc, char ** argv){
         }
         frequencies_v[num_of_sequence].name[j] = '\0';
       } else {
-        if (is_valid(nucleotid)){
+        if (nucleotid == 'A' || nucleotid == 'C' || nucleotid == 'G' || nucleotid == 'D'){
           if (empezar){
             k_mer[0] = nucleotid;
             for (int j = 1; j <= k_size-1; j++){
               do {
                 nucleotid = fgetc(fasta_f->ffd);
               } while (nucleotid == '\n');
-              if (!is_valid(nucleotid)){
-                printf("El k-mer es demasiado grande ?\n");
+              if (!(nucleotid == 'A' || nucleotid == 'C' || nucleotid == 'G' || nucleotid == 'D')){
+                break;
               }
               k_mer[j] = nucleotid;
             }
             empezar = 0;
-          } else {
-            strncpy(aux_pchar, k_mer+1, k_size-1);
-            strncpy(k_mer, aux_pchar, k_size-1);
+        } else {
+            strncpy(k_mer, k_mer+1, k_size-1);
             k_mer[k_size-1] = nucleotid;
-          }
+        }
           index = get_index(k_mer, k_size);
           frequencies_v[num_of_sequence].vector[index]++;
         } else {
@@ -90,12 +89,15 @@ int main(int argc, char ** argv){
   }
 
   double euclidean_d = 0;
-  euclidean_d = euclidean_distance(frequencies_v[0].vector, frequencies_v[1].vector, (int) pow(4, k_size));
+  euclidean_d = euclidean_distance(frequencies_v[0].vector, frequencies_v[1].vector, four_powers[0][k_size]);
   printf("%f\n\n", euclidean_d);
-
+  for (int j=0; j<four_powers[0][k_size]; j++){
+    printf("%d\n", frequencies_v[0].vector[j] - frequencies_v[1].vector[j]);
+  }
+  printf("\n");
   for (int i = 0; i<num_of_sequence; i++){
     printf("%s\n", frequencies_v[i].name);
-    for (int j=0; j<(int) pow(4, k_size); j++){
+    for (int j=0; j<four_powers[0][k_size]; j++){
       printf("%d\n", frequencies_v[i].vector[j]);
     }
     printf("\n");
@@ -114,10 +116,6 @@ double euclidean_distance(int * vector1, int * vector2, int k){
     res += pow((vector1[i]-vector2[i]), 2);
   }
   return sqrt(res);
-}
-
-bool is_valid(char c){
-	return c == 'A'|| c == 'C' || c == 'G' || c == 'T';
 }
 
 int get_index(char * k_mer, int k){
@@ -145,5 +143,5 @@ int get_index(char * k_mer, int k){
 
 int terror(int i){
 	fprintf(stderr, "Error: %d\n",i);
-	return(i);
+	exit(i);
 }
